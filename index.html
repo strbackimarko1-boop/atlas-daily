@@ -1,1 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ATLAS">
+<meta name="theme-color" content="#0a0a0f">
+<title>ATLAS — Daily Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #13131a;
+  --surface2: #1c1c26;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text: #f0efe8;
+  --muted: #6b6a7a;
+  --hint: #3a3a4a;
+  --green: #1fba87;
+  --green-bg: rgba(31,186,135,0.1);
+  --green-border: rgba(31,186,135,0.25);
+  --amber: #d4870f;
+  --amber-bg: rgba(212,135,15,0.1);
+  --amber-border: rgba(212,135,15,0.25);
+  --red: #e05252;
+  --red-bg: rgba(224,82,82,0.1);
+  --red-border: rgba(224,82,82,0.25);
+  --target: 3000;
+  --limit: 4500;
+  --font-display: 'Syne', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+}
 
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-display);
+  overflow-x: hidden;
+}
+
+body {
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+.app {
+  max-width: 430px;
+  margin: 0 auto;
+  padding: 0 0 2rem;
+  min-height: 100vh;
+}
+
+/* Header */
+.header {
+  padding: 1.5rem 1.25rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.header-left {}
+.atlas-mark {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+.month-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+}
+.day-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 10px;
+  margin-top: 4px;
+  display: inline-block;
+}
+
+/* Hero remaining */
+.hero {
+  padding: 1rem 1.25rem 1.5rem;
+  text-align: center;
+}
+.hero-label {
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.hero-amount {
+  font-family: var(--font-mono);
+  font-size: 64px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -2px;
+  transition: color .3s;
+}
+.hero-amount.green { color: var(--green); }
+.hero-amount.amber { color: var(--amber); }
+.hero-amount.red { color: var(--red); }
+.hero-currency {
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--muted);
+  margin-left: 4px;
+}
+
+/* Zone badge */
+.zone-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 12px;
+}
+.zone-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: 1px solid;
+  transition: all .3s;
+}
+.zone-badge.green { background: var(--green-bg); border-color: var(--green-border); color: var(--green); }
+.zone-badge.amber { background: var(--amber-bg); border-color: var(--amber-border); color: var(--amber); }
+.zone-badge.red   { background: var(--red-bg);   border-color: var(--red-border);   color: var(--red); }
+
+/* Progress bar */
+.bar-section {
+  padding: 0 1.25rem;
+  margin-bottom: 1.5rem;
+}
+.bar-labels {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.bar-labels .lbl-target { color: var(--green); }
+.bar-labels .lbl-limit  { color: var(--red); }
+.bar-outer {
+  height: 6px;
+  background: var(--surface2);
+  border-radius: 3px;
+  position: relative;
+  overflow: visible;
+}
+.bar-inner {
+  height: 100%;
+  border-radius: 3px;
+  transition: width .5s cubic-bezier(.4,0,.2,1), background .3s;
+  position: relative;
+  z-index: 1;
+}
+.bar-target-tick {
+  position: absolute;
+  top: -5px;
+  width: 2px;
+  height: 16px;
+  background: var(--green);
+  border-radius: 1px;
+  left: 66.67%;
+  z-index: 2;
+  opacity: .7;
+}
+
+/* Stats row */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 0 1.25rem;
+  margin-bottom: 1.5rem;
+}
+.stat-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 8px;
+  text-align: center;
+}
+.stat-box-label {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 5px;
+}
+.stat-box-val {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 500;
+}
+.stat-box-val.green { color: var(--green); }
+.stat-box-val.amber { color: var(--amber); }
+.stat-box-val.red   { color: var(--red); }
+.stat-box-val.neutral { color: var(--text); }
+.stat-box-sub {
+  font-size: 9px;
+  color: var(--hint);
+  margin-top: 2px;
+  font-family: var(--font-mono);
+}
+
+/* Input section */
+.input-section {
+  padding: 0 1.25rem;
+  margin-bottom: 1.5rem;
+}
+.input-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.25rem;
+}
+.input-section-label {
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 1rem;
+}
+.amount-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  padding: 4px 4px 4px 16px;
+}
+.currency-tag {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.amount-field {
+  flex: 1;
+  background: none;
+  border: none;
+  font-family: var(--font-mono);
+  font-size: 28px;
+  font-weight: 500;
+  color: var(--text);
+  text-align: right;
+  padding: 8px 0;
+  outline: none;
+  width: 100%;
+  -webkit-appearance: none;
+}
+.amount-field::placeholder { color: var(--hint); }
+
+.note-field {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  color: var(--text);
+  outline: none;
+  margin-bottom: 14px;
+  transition: border-color .2s;
+}
+.note-field::placeholder { color: var(--hint); }
+.note-field:focus { border-color: var(--border2); }
+
+.log-btn {
+  width: 100%;
+  padding: 14px;
+  background: var(--text);
+  color: var(--bg);
+  border: none;
+  border-radius: 12px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  cursor: pointer;
+  transition: opacity .15s, transform .1s;
+  -webkit-appearance: none;
+}
+.log-btn:active { opacity: .85; transform: scale(.98); }
+
+/* Confirm flash */
+.flash {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--green);
+  text-align: center;
+  height: 20px;
+  margin-bottom: 4px;
+  opacity: 0;
+  transition: opacity .2s;
+}
+.flash.show { opacity: 1; }
+
+/* History */
+.history-section {
+  padding: 0 1.25rem;
+  margin-bottom: 1.5rem;
+}
+.history-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.history-title {
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.clear-all {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--hint);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 6px;
+  transition: color .15s;
+}
+.clear-all:hover { color: var(--red); }
+
+.entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  animation: fadeIn .2s ease;
+}
+@keyframes fadeIn { from { opacity:0; transform: translateY(-4px); } to { opacity:1; transform:none; } }
+.entry:last-child { border-bottom: none; }
+.entry-left { flex: 1; }
+.entry-date {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+.entry-note {
+  font-size: 13px;
+  color: var(--text);
+}
+.entry-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.entry-amt {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--red);
+}
+.entry-del {
+  background: none;
+  border: none;
+  color: var(--hint);
+  font-size: 18px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 4px;
+  transition: color .15s;
+}
+.entry-del:active { color: var(--red); }
+
+.empty-state {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--hint);
+  text-align: center;
+  padding: 1.5rem 0;
+}
+
+/* Sheet note */
+.sheet-note {
+  margin: 0 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.7;
+}
+.sheet-note strong { color: var(--text); }
+
+/* Divider */
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 0 1.25rem 1.5rem;
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="header-left">
+      <div class="atlas-mark">Atlas</div>
+      <div class="month-name" id="monthName">March 2026</div>
+      <div class="day-badge" id="dayBadge">Day 23 / 31</div>
+    </div>
+  </div>
+
+  <div class="hero">
+    <div class="hero-label">left this month</div>
+    <div class="hero-amount green" id="heroAmount">4,500<span class="hero-currency">SAR</span></div>
+    <div class="zone-wrap">
+      <div class="zone-badge green" id="zoneBadge">Under target — on track</div>
+    </div>
+  </div>
+
+  <div class="bar-section">
+    <div class="bar-labels">
+      <span class="lbl-target">3,000 target</span>
+      <span id="spentLabel" style="color:var(--muted)">0 spent</span>
+      <span class="lbl-limit">4,500 limit</span>
+    </div>
+    <div class="bar-outer">
+      <div class="bar-inner" id="barInner" style="width:0%;background:var(--green)"></div>
+      <div class="bar-target-tick"></div>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-box">
+      <div class="stat-box-label">Today</div>
+      <div class="stat-box-val red" id="statToday">0</div>
+      <div class="stat-box-sub">SAR</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-box-label">Daily avg</div>
+      <div class="stat-box-val neutral" id="statAvg">0</div>
+      <div class="stat-box-sub">SAR/day</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-box-label">Saved</div>
+      <div class="stat-box-val green" id="statSaved">4,500</div>
+      <div class="stat-box-sub">SAR</div>
+    </div>
+  </div>
+
+  <div class="input-section">
+    <div class="flash" id="flash">Logged.</div>
+    <div class="input-card">
+      <div class="input-section-label">Log spending</div>
+      <div class="amount-wrap">
+        <span class="currency-tag">SAR</span>
+        <input type="number" class="amount-field" id="amountField" placeholder="0" min="0" inputmode="decimal">
+      </div>
+      <input type="text" class="note-field" id="noteField" placeholder="Note — groceries, uber, lunch...">
+      <button class="log-btn" onclick="logEntry()">Log</button>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="history-section">
+    <div class="history-head">
+      <span class="history-title">This month</span>
+      <button class="clear-all" onclick="clearAll()">clear all</button>
+    </div>
+    <div id="historyList"><div class="empty-state">No entries yet.</div></div>
+  </div>
+
+  <div class="sheet-note">
+    End of month — copy <strong id="sheetTotal">0 SAR</strong> to Google Sheet Monthly Log
+  </div>
+
+</div>
+
+<script>
+const BUDGET = 4500;
+const TARGET = 3000;
+const KEY = 'atlas_v3';
+
+function monthKey() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+}
+
+function load() {
+  try {
+    const r = localStorage.getItem(KEY);
+    if (!r) return { m: monthKey(), e: [] };
+    const d = JSON.parse(r);
+    if (d.m !== monthKey()) return { m: monthKey(), e: [] };
+    return d;
+  } catch(e) { return { m: monthKey(), e: [] }; }
+}
+
+function persist(data) {
+  try { localStorage.setItem(KEY, JSON.stringify(data)); } catch(e) {}
+}
+
+function f(n) { return Math.round(n).toLocaleString('en-US'); }
+
+function render() {
+  const data = load();
+  const entries = data.e || [];
+  const now = new Date();
+  const todayStr = now.toISOString().slice(0,10);
+  const dim = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+  const dom = now.getDate();
+
+  document.getElementById('monthName').textContent = now.toLocaleDateString('en-US', { month:'long', year:'numeric' });
+  document.getElementById('dayBadge').textContent = 'Day ' + dom + ' / ' + dim;
+
+  const total = entries.reduce((s,e) => s+e.a, 0);
+  const todayAmt = entries.filter(e => e.d === todayStr).reduce((s,e) => s+e.a, 0);
+  const remaining = Math.max(0, BUDGET - total);
+  const pct = Math.min(100, (total / BUDGET) * 100);
+  const avg = dom > 0 ? total / dom : 0;
+  const saved = BUDGET - total;
+  const overTarget = total > TARGET;
+  const overLimit = total > BUDGET;
+
+  const heroEl = document.getElementById('heroAmount');
+  heroEl.innerHTML = f(remaining) + '<span class="hero-currency">SAR</span>';
+  heroEl.className = 'hero-amount ' + (overLimit ? 'red' : overTarget ? 'amber' : 'green');
+
+  const bar = document.getElementById('barInner');
+  bar.style.width = pct.toFixed(1) + '%';
+  bar.style.background = overLimit ? 'var(--red)' : overTarget ? 'var(--amber)' : 'var(--green)';
+
+  document.getElementById('spentLabel').textContent = f(total) + ' spent';
+
+  const badge = document.getElementById('zoneBadge');
+  if (overLimit) {
+    badge.textContent = 'Over hard limit';
+    badge.className = 'zone-badge red';
+  } else if (overTarget) {
+    badge.textContent = 'Over personal target — watch it';
+    badge.className = 'zone-badge amber';
+  } else {
+    badge.textContent = f(TARGET - total) + ' SAR under target';
+    badge.className = 'zone-badge green';
+  }
+
+  document.getElementById('statToday').textContent = f(todayAmt);
+  document.getElementById('statAvg').textContent = f(avg);
+
+  const savedEl = document.getElementById('statSaved');
+  savedEl.textContent = f(Math.max(0, saved));
+  savedEl.className = 'stat-box-val ' + (saved >= 0 ? 'green' : 'red');
+
+  document.getElementById('sheetTotal').textContent = f(total) + ' SAR';
+
+  const list = document.getElementById('historyList');
+  if (!entries.length) {
+    list.innerHTML = '<div class="empty-state">No entries yet.</div>';
+    return;
+  }
+  const sorted = [...entries].sort((a,b) => b.ts - a.ts);
+  list.innerHTML = sorted.map(e => `
+    <div class="entry">
+      <div class="entry-left">
+        <div class="entry-date">${e.d}</div>
+        ${e.n ? `<div class="entry-note">${e.n}</div>` : '<div class="entry-note" style="color:var(--hint)">—</div>'}
+      </div>
+      <div class="entry-right">
+        <span class="entry-amt">${f(e.a)} SAR</span>
+        <button class="entry-del" onclick="del(${e.ts})">×</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function logEntry() {
+  const amt = parseFloat(document.getElementById('amountField').value);
+  const note = document.getElementById('noteField').value.trim();
+  if (!amt || amt <= 0) {
+    document.getElementById('amountField').style.color = 'var(--red)';
+    setTimeout(() => document.getElementById('amountField').style.color = '', 600);
+    return;
+  }
+  const data = load();
+  const now = new Date();
+  data.e.push({ ts: Date.now(), d: now.toISOString().slice(0,10), a: amt, n: note });
+  persist(data);
+  document.getElementById('amountField').value = '';
+  document.getElementById('noteField').value = '';
+  const fl = document.getElementById('flash');
+  fl.classList.add('show');
+  setTimeout(() => fl.classList.remove('show'), 1600);
+  render();
+}
+
+function del(ts) {
+  const data = load();
+  data.e = data.e.filter(e => e.ts !== ts);
+  persist(data);
+  render();
+}
+
+function clearAll() {
+  if (!confirm('Clear all entries for this month?')) return;
+  persist({ m: monthKey(), e: [] });
+  render();
+}
+
+document.getElementById('amountField').addEventListener('keydown', e => { if(e.key==='Enter') logEntry(); });
+document.getElementById('noteField').addEventListener('keydown', e => { if(e.key==='Enter') logEntry(); });
+
+render();
+</script>
+</body>
+</html>
